@@ -18,6 +18,8 @@ LV_FONT_DECLARE(ephoto_ui_font_27);
 LV_FONT_DECLARE(ephoto_ui_font_36);
 LV_FONT_DECLARE(ephoto_clock_num_81);
 
+extern const uint8_t miniapp_qr_112_rgb565_start[] asm("_binary_miniapp_qr_112_rgb565_start");
+extern const uint8_t miniapp_qr_112_rgb565_end[] asm("_binary_miniapp_qr_112_rgb565_end");
 
 #define EPHOTO_MENU_STATUS_COUNT 8
 #define EPHOTO_BOOT_QR_SIZE 128
@@ -163,8 +165,21 @@ static void load_boot_image_asset(const board_profile_t *profile)
 
 static void init_boot_qr_asset(void)
 {
-    // The public source distribution intentionally omits the private mini-app QR asset.
+    size_t data_size = (size_t)(miniapp_qr_112_rgb565_end - miniapp_qr_112_rgb565_start);
+    if (data_size < (size_t)(EPHOTO_BOOT_QR_SIZE * EPHOTO_BOOT_QR_SIZE * 2U)) {
+        ESP_LOGW(TAG, "miniapp qr asset too small: %u", (unsigned)data_size);
+        return;
+    }
+
     memset(&s_boot_qr_dsc, 0, sizeof(s_boot_qr_dsc));
+    s_boot_qr_dsc.header.magic = LV_IMAGE_HEADER_MAGIC;
+    s_boot_qr_dsc.header.cf = LV_COLOR_FORMAT_RGB565;
+    s_boot_qr_dsc.header.flags = 0;
+    s_boot_qr_dsc.header.w = EPHOTO_BOOT_QR_SIZE;
+    s_boot_qr_dsc.header.h = EPHOTO_BOOT_QR_SIZE;
+    s_boot_qr_dsc.header.stride = EPHOTO_BOOT_QR_SIZE * 2U;
+    s_boot_qr_dsc.data_size = EPHOTO_BOOT_QR_SIZE * EPHOTO_BOOT_QR_SIZE * 2U;
+    s_boot_qr_dsc.data = miniapp_qr_112_rgb565_start;
 }
 
 static void set_row_style(lv_obj_t *row, bool selected, bool editing)
